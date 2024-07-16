@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { max-width: 600px; margin: auto; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; }
+        .button { padding: 10px 20px; margin: 5px; border: solid; text-decoration: none;}
+        .response { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Session Management</h1>
+        <button type="button" onclick="startSession()">Start Session</button>
+        <button type="button" onclick="stopSession()">Stop Session</button>
+        <button type="button" onclick="logoutSession()">Logout Session</button>
+        <button type="button" onclick="takeScreenshot()">Take Screenshot</button>
+        <div class="response" id="response"></div>
+        <img id="screenshot" style="max-width: 100%; display: none;">
+    </div>
+    <a href="./sendMessage.html" class="button">Send a Message</a>
+    <script>
+        const WAHA_API_BASE_URL = 'http://localhost:3001/api';
+
+        async function startSession() {
+            const payload = {
+                "name": "default",
+                "config": {
+                    "proxy": null,
+                    "noweb": { "store": { "enabled": true, "fullSync": false } },
+                    "webhooks": [
+                        {
+                            "url": "https://webhook.site/11111111-1111-1111-1111-11111111",
+                            "events": ["message", "session.status"],
+                            "hmac": null,
+                            "retries": null,
+                            "customHeaders": null
+                        }
+                    ],
+                    "debug": false
+                }
+            };
+
+            try {
+                const response = await fetch(`${WAHA_API_BASE_URL}/sessions/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                document.getElementById('response').innerText = 'Session Started: ' + JSON.stringify(data);
+            } catch (error) {
+                document.getElementById('response').innerText = 'Failed to start session: ' + error.message;
+            }
+        }
+
+        async function stopSession() {
+            const payload = { "logout": false, "name": "default" };
+
+            try {
+                const response = await fetch('/api/sessions/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    document.getElementById('response').innerText = 'Session Stopped';
+                } else {
+                    const data = await response.json();
+                    document.getElementById('response').innerText = 'Failed to stop session: ' + JSON.stringify(data);
+                }
+            } catch (error) {
+                document.getElementById('response').innerText = 'Failed to stop session: ' + error.message;
+            }
+        }
+
+        async function logoutSession() {
+            const payload = { "name": "default" };
+
+            try {
+                const response = await fetch(`${WAHA_API_BASE_URL}/sessions/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    document.getElementById('response').innerText = 'Session Logged Out';
+                } else {
+                    const data = await response.json();
+                    document.getElementById('response').innerText = 'Failed to logout session: ' + JSON.stringify(data);
+                }
+            } catch (error) {
+                document.getElementById('response').innerText = 'Failed to logout session: ' + error.message;
+            }
+        }
+
+        async function takeScreenshot() {
+            try {
+                const response = await fetch(`${WAHA_API_BASE_URL}/screenshot?session=default`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const img = document.getElementById('screenshot');
+                    img.src = url;
+                    img.style.display = 'block';
+                    document.getElementById('response').innerText = 'Screenshot taken';
+                } else {
+                    const data = await response.json();
+                    document.getElementById('response').innerText = 'Failed to take screenshot: ' + JSON.stringify(data);
+                }
+            } catch (error) {
+                document.getElementById('response').innerText = 'Failed to take screenshot: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

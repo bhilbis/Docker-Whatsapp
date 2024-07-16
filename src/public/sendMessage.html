@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Message</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        form {
+            margin: 20px;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, textarea, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 20px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Send Message</h1>
+    <form id="sendMessageForm">
+        <label for="countryCode">Country Code:</label>
+        <select id="countryCode" name="countryCode">
+            <option value="62">Indonesia (+62)</option>
+            <option value="1">USA (+1)</option>
+            <option value="91">India (+91)</option>
+            <!-- Add more countries -->
+        </select>
+        <label for="chatId">Phone Number:</label>
+        <input type="text" id="chatId" name="chatId" placeholder="859*********" required><br><br>
+        <label for="text">Message:</label>
+        <textarea id="text" name="text" placeholder="Hi there!" required></textarea><br><br>
+        <button type="submit">Send Message</button>
+    </form>
+    <p id="response"></p>
+
+    <script>
+        document.getElementById('sendMessageForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const countryCode = document.getElementById('countryCode').value;
+            const chatIdInput = document.getElementById('chatId');
+            const chatId = countryCode + chatIdInput.value + '@c.us';
+            const text = document.getElementById('text').value;
+            const session = 'default';
+
+            const responseElement = document.getElementById('response');
+            responseElement.textContent = '';
+
+            try {
+                const response = await fetch('http://localhost:3001/api/sendText', {
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify({ chatId, text, session }) 
+                }) ; 
+
+                if (response.ok) {
+                    responseElement.textContent = "Pesan Berhasil Terkirim";
+                    responseElement.className = 'success';
+                } else {
+                    const errorData = await response.text();
+                    if (errorData.includes('Nomor International Sudah terdeteksi')) {
+                        responseElement.textContent = "Nomor international sudah ada";
+                    } else {
+                        responseElement.textContent = "Pesan Tidak Berhasil Terkirim";
+                    }
+                    responseElement.className = 'error';
+                }
+            } catch (error) {
+                responseElement.textContent = "Pesan Tidak Berhasil Terkirim";
+                responseElement.className = 'error';
+            }
+            
+        });
+    </script>
+</body>
+</html>
