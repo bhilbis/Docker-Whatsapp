@@ -1,6 +1,9 @@
 const axios = require('axios');
+const notifier = require('node-notifier');
 
 const WAHA_API_BASE_URL = 'http://localhost:3001/api';
+
+let message = [];
 
 const startSession = async (req, res) => {
     try {
@@ -14,22 +17,22 @@ const startSession = async (req, res) => {
 
 const stopSession = async (req, res) => {
     try {
-        console.log('Stop session payload:', req.body);  // Logging payload for debugging
+        console.log('Stop session payload:', req.body);
         const response = await axios.post(`${WAHA_API_BASE_URL}/sessions/stop`, req.body);
         res.status(response.status).send(response.data);
     } catch (error) {
-        console.error('Error stopping session:', error.message);  // Logging error message
+        console.error('Error stopping session:', error.message);  
         res.status(error.response ? error.response.status : 500).send(error.response ? error.response.data : error.message);
     }
 };
 
 const logoutSession = async (req, res) => {
     try {
-        console.log('Logout session payload:', req.body);  // Logging payload for debugging
+        console.log('Logout session payload:', req.body);
         const response = await axios.post(`${WAHA_API_BASE_URL}/sessions/logout`, req.body);
         res.status(response.status).send(response.data);
     } catch (error) {
-        console.error('Error logging out session:', error.message);  // Logging error message
+        console.error('Error logging out session:', error.message);
         res.status(error.response ? error.response.status : 500).send(error.response ? error.response.data : error.message);
     }
 };
@@ -37,13 +40,13 @@ const logoutSession = async (req, res) => {
 const screenshotSession = async (req, res) => {
     try {
         const { session } = req.query;
-        console.log('Screenshot session:', session);  // Logging session for debugging
+        console.log('Screenshot session:', session);
         const response = await axios.get(`${WAHA_API_BASE_URL}/screenshot?session=${session}`, { responseType: 'arraybuffer' });
         res.set('Content-Type', response.headers['content-type']);
         res.send(response.data);
     } catch (error) {
-        console.error('Error taking screenshot:', error.message);  // Logging error message
-        res.status(error.response ? error.response.status : 500).send(error.message);
+        console.error('Error taking screenshot:', error.message);  
+        res.status(error.response ? error.response.status : 500).send(error.response ? error.response.data : error.message);
     }
 };
 
@@ -54,7 +57,7 @@ const getSessions = async (req, res) => {
         const response = await axios.get(url);
         res.status(response.status).send(response.data);
     } catch (error) {
-        res.status(error.response ? error.response.status: 500).send(error.message);
+        res.status(error.response ? error.response.status: 500).send(error.response ? error.response.data : error.message);
     }
 };
 
@@ -72,7 +75,7 @@ const sendMessage = async (req, res) => {
         res.status(response.status).send(response.data);
     } catch (error) {
         console.error('Error sending message:', error.message); 
-        res.status(error.response ? error.response.status : 500).send(error.message);
+        res.status(error.response ? error.response.status : 500).send(error.response ? error.response.data : error.message);
     }
 };
 
@@ -82,8 +85,40 @@ const sendPoll = async (req,res) => {
         res.status(response.status).send(response.data);
     } catch (error) {
         console.error('Error sending poll:', error.message);
-        res.status(error.response ? error.response.status : 500).send(error.message);
+        res.status(error.response ? error.response.status : 500).send(error.response ? error.response.data : error.message);
     }
+}
+
+const sendNotification = (sender, message) => {
+    notifier.notify({
+        title: 'New Whatsapp Message',
+        message: `from: ${sender}\nMessage: ${message}`,
+        sound: true,
+        wait: true
+    });
+};
+
+const handleWebhook = (req, res) => {
+    console.log('Webhook received : ', JSON.stringify(req, null, 2));
+
+    if (req.body.event === 'message') {
+        const messageData = req.body.payload;
+        const message = messageData.body;
+        const sender = messageData.from;
+
+        console.log(`Received message from ${sender}: ${message}`);
+
+        sendNotification(sender, message);
+
+        message.push({
+            sender: sender,
+            message: message,
+            timestamp: messageData.timestamp,
+        });
+    } else if (req.body.event === 'session.status') {
+        console.log('Session status :', req.body.payload.status)
+    }
+    res.status(200).send('Webhook received');
 }
 
 module.exports = {
@@ -94,4 +129,5 @@ module.exports = {
     screenshotSession,
     sendMessage,
     sendPoll,
+    handleWebhook,
 };

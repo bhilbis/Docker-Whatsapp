@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const wahaController = require('./controllers/wahaController');
+const notifier =  require('node-notifier')
 const app = express();
 const port = 4000;
 
@@ -19,6 +20,17 @@ app.get('/sendMessage', (req, res) => {
 app.get('/sendPoll',(req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sendPoll.html'));
 })
+
+function sendNotification(sender, message) {
+    notifier.notify({
+        title: 'New WhatsApp Message',
+        message: `From: ${sender}\nMessage: ${message}`,
+        sound: true,
+        wait: true
+    })
+}
+
+app.post('/webhook', wahaController.handleWebhook)
 
 //sessions
 app.post('/api/sessions/start', wahaController.startSession);
