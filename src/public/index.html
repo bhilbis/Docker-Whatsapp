@@ -5,11 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Session Management</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        .container { max-width: 600px; margin: auto; padding: 20px; }
-        button { padding: 10px 20px; margin: 5px; }
-        .button { padding: 10px 20px; margin: 5px; border: solid; text-decoration: none;}
-        .response { margin-top: 10px; }
+        body { 
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: auto; 
+            padding: 20px; 
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+        }
+        button, .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover, .button:hover {
+            background-color: #0056b3;
+        }
+        .response { 
+            margin-top: 10px; 
+            font-size: 14px;
+            color: #555;
+        }
+        .message-container {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        .message {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        img{
+            max-width: 100%;
+            display: none;
+        }
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -19,10 +96,32 @@
         <button type="button" onclick="stopSession()">Stop Session</button>
         <button type="button" onclick="logoutSession()">Logout Session</button>
         <button type="button" onclick="takeScreenshot()">Take Screenshot</button>
+        <button type="button" onclick="openModal()">Get Message</button>
+        <a href="./sendMessage.html" class="button">Send a Message</a>
         <div class="response" id="response"></div>
-        <img id="screenshot" style="max-width: 100%; display: none;">
+        <img id="screenshot">
+        <div class="message-container" id="messageContainer"></div>
     </div>
-    <a href="./sendMessage.html" class="button">Send a Message</a>
+
+    <div id="getMessageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Get Message</h2>
+            <form id="getMessageForm">
+                <label for="chatId">Chat ID:</label>
+                <input type="text" id="chatId" name="chatId" required><br><br>
+                <label for="downloadMedia">Download Media:</label>
+                <input type="checkbox" id="downloadMedia" name="downloadMedia"><br><br>
+                <label for="limit">Limit:</label>
+                <input type="number" id="limit" name="limit" required><br><br>
+                <label for="session">Session:</label>
+                <input type="text" id="session" name="session" required><br><br>
+                <!-- <button type="button" onclick="getMessage()">Get Message</button> -->
+                <button type="button" onclick="fetchLatestMessage()">Get Message</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         const WAHA_API_BASE_URL = 'http://localhost:3001/api';
 
@@ -116,6 +215,62 @@
                 document.getElementById('response').innerText = 'Failed to take screenshot: ' + error.message;
             }
         }
+
+        async function fetchLatestMessage() {
+            const chatId = document.getElementById('chatId').value;
+            const downloadMedia = document.getElementById('downloadMedia').value;
+            const limit = document.getElementById('limit').value;
+            const session = document.getElementById('session').value;
+
+            if (!chatId || !limit || !session) {
+                document.getElementById('response').innerText = 'Please fill in all fields.';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${WAHA_API_BASE_URL}/messages?chatId=${encodeURIComponent(chatId)}&downloadMedia=${downloadMedia}&limit=${limit}&session=${session}`);
+                const data = await response.json();
+                document.getElementById('response').innerText = 'Latest Message: ' + JSON.stringify(data);
+            } catch (error) {
+                document.getElementById('response').innerText = 'Failed to fetch Latest Message: ', error.message;
+            }
+
+            closeModal();
+        }
+
+        function openModal() {
+            document.getElementById('getMessageModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('getMessageModal').style.display = 'none';
+        }
+
+        //WebSocket
+        // document.addEventListener('DOMContentLoaded', () => {
+            const ws = new WebSocket('ws://localhost:4000/websocket');
+
+            ws.onopen = () => {
+                console.log('WebSocket connection opened');
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                const messageContainer = document.getElementById('messageContainer')
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+                messageDiv.textContent = `${data.timestamp} - ${data.sender}: ${data.message}`;
+                messageContainer.appendChild(messageDiv);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            }
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            }
+        // })
     </script>
 </body>
 </html>

@@ -2,9 +2,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const wahaController = require('./controllers/wahaController');
-const notifier =  require('node-notifier')
+const expressWs = require('express-ws');
+
 const app = express();
 const port = 4000;
+
+expressWs(app);
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname,'public')));
@@ -17,18 +20,14 @@ app.get('/sendMessage', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sendMessage.html'));
 })
 
-app.get('/sendPoll',(req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'sendPoll.html'));
+//Web Socket
+app.ws('/websocket', (ws, req) => {
+    console.log('WebSocket connection established');
+    ws.on('close', () => {
+        console.log('WebSocket connection closed');
+    });
+    wahaController.addClient(ws)
 })
-
-function sendNotification(sender, message) {
-    notifier.notify({
-        title: 'New WhatsApp Message',
-        message: `From: ${sender}\nMessage: ${message}`,
-        sound: true,
-        wait: true
-    })
-}
 
 app.post('/webhook', wahaController.handleWebhook)
 
@@ -36,12 +35,14 @@ app.post('/webhook', wahaController.handleWebhook)
 app.post('/api/sessions/start', wahaController.startSession);
 app.post('/api/sessions/stop', wahaController.stopSession);
 app.post('/api/sessions/logout', wahaController.logoutSession);
-app.post('/api/sessions', wahaController.getSessions);
+app.get('/api/sessions', wahaController.getSessions);
 //login screenshots
-app.post('/api/screenshot', wahaController.screenshotSession);
+app.get('/api/screenshot', wahaController.screenshotSession);
 //send sessions
 app.post('/api/sendText', wahaController.sendMessage);
-app.post('/api/sendPoll', wahaController.sendPoll);
+app.get('/api/messages', wahaController.fetchLatestMessage)
+//End point get messages
+app.get('/api/messages', wahaController.getMessage)
 
 app.listen(port, () =>{
     console.log(`Server running at http://localhost:${port}/`);

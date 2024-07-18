@@ -7,34 +7,54 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+            text-align: center;
         }
         form {
-            margin: 20px;
+            display: flex;
+            flex-direction: column;
         }
         label {
-            display: block;
-            margin: 10px 0 5px;
+            margin-bottom: 5px;
+            color: #555;
         }
-        select {
+        select, input, textarea, button {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
             width: 100%;
-            padding: 10px;
-            margin: 5px 0 20px;
-            font-size: 16px;
-        }
-        input, textarea, button {
-            width: 98.5%;
-            padding: 10px;
-            margin: 5px 0 20px;
-            font-size: 16px;
+            box-sizing: border-box;
         }
         button {
-            background-color: #4CAF50;
+            background-color: #28a745;
             color: white;
             border: none;
             cursor: pointer;
         }
         button:hover {
-            background-color: #45a049;
+            background-color: #218838;
+        }
+        .response {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+            text-align: center;
         }
         .success {
             color: green;
@@ -45,6 +65,7 @@
     </style>
 </head>
 <body>
+    <div class="container">
     <h1>Send Message</h1>
     <form id="sendMessageForm">
         <label for="countryCode">Country Code :</label>
@@ -54,13 +75,14 @@
             <option value="91">India (+91)</option> -->
             <!-- Add more countries -->
         </select>
-        <label for="chatId"><small>(Recipient)</small> Phone Number : <small>(<i>Use phone number (without +) </i> )</small></label>
-        <input type="text" id="chatId" name="chatId" placeholder="859*********" required><br><br>
+        <label for="chatId"><small>(Recipient)</small> Phone Number : <small>(<i>without your international phone number</i>)</small></label>
+        <input type="text" id="chatId" name="chatId" placeholder="859*********" required>
         <label for="text">Message :</label>
-        <textarea id="text" name="text" placeholder="Hi there!" required></textarea><br><br>
+        <textarea id="text" name="text" placeholder="Hi there!" required></textarea>
         <button type="submit">Send Message</button>
     </form>
     <p id="response"></p>
+    </div>
 
     <script>
         document.getElementById('sendMessageForm').addEventListener('submit', async function(event) {
